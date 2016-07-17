@@ -4,7 +4,7 @@
 // @version      0.3
 // @description  A User Script for the new QuarterToThree forum on Discourse.
 // @author       arrendek
-// @match        http*://forum.quartertothree.com/t/*
+// @match        *://forum.quartertothree.com/*
 // @grant        none
 // ==/UserScript==
 
