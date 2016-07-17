@@ -1,0 +1,141 @@
+html {
+  font: 13px Verdana,Arial,Tahoma,Calibri,Geneva,sans-serif;
+  font-family: Verdana,Arial,Tahoma,Calibri,Geneva,sans-serif;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 13px;
+  line-height: normal;
+  font-size-adjust: none;
+  font-stretch: normal;
+  font-feature-settings: normal;
+  font-language-override: normal;
+  font-kerning: auto;
+  font-synthesis: weight style;
+  font-variant-alternates: normal;
+  font-variant-caps: normal;
+  font-variant-east-asian: normal;
+  font-variant-ligatures: normal;
+  font-variant-numeric: normal;
+  font-variant-position: normal;
+  color: #eeeeee;
+}
+/* Container for the Qt3 logo */
+header {
+  background-color:#25292c !important;
+  background-color:#25292c !important;
+  border-bottom:1px solid #ccc;
+}
+body, #main {
+background: #111111 url(http://www.quartertothree.com/game-talk/cpstyles/darkvision/gradients/page_bg.gif) repeat-x;
+  background-color: rgb(17, 17, 17);
+  background-image: url("http://www.quartertothree.com/game-talk/cpstyles/darkvision/gradients/page_bg.gif");
+  background-repeat: repeat-x;
+  background-attachment: scroll;
+  background-position: 0% 0%;
+  background-clip: border-box;
+  background-origin: padding-box;
+  background-size: auto auto;
+}
+/* Nav menu text */
+.nav-pills > li > a:link,.nav-pills > li > a:visited {
+  color:#fff;
+}
+/* Subforum titles */
+h3.ember-view a:link, h3.ember-view a:visited, #topic-title h1 a:link, #topic-title h1 a:visited, .topic-list.categories a.title:link, .topic-list.categories a.title:visited {
+  color:#fff !important;
+}
+h3.ember-view a:hover, #topic-title h1 a:hover, .topic-list.categories a.title:hover {
+  color:#30659b;
+  text-decoration:underline;
+}
+/* Categories, topics misc widgets */
+td.category, td.latest, td.stats {
+  background-color:#25292c;
+}
+td.category .category-description {
+  color:#fff;
+}
+.topic-list.categories .featured-topic i {
+  color:#fff !important;
+}
+.badge-wrapper.bullet span.badge-category {
+  color:#30659b !important;
+}
+.onscreen-post {
+ // background-color:#000;
+ background-color:#1b1b1b;
+ color:#fff;
+}
+.topic-body {
+ // background-color:#000;
+ // color:#fff;
+ background-color:#212224;
+}
+.topic-body  a:link, .topic-body a:visited {
+  color: #eeeeee;
+  text-decoration:underline;
+}
+.topic-body a:hover {
+  color:#08c;
+}
+table.topic-list tr.topic-list-item {
+  background-color:#25292c;
+  color:#fff;
+  background: linear-gradient(to bottom, #fff 70%, #eee 95%);
+  background-color: transparent;
+  background-image: linear-gradient(to bottom, #25292c, #25292c 95%);
+  background-repeat: repeat;
+  background-attachment: scroll;
+  background-position: 0% 0%;
+  background-clip: border-box;
+  background-origin: padding-box;
+  background-size: auto auto;
+}
+.topic-list a.title:link, .topic-list a.title:visited {
+  color:#fff;
+}
+.topic-list a.title:hover {
+  color:#08c;
+  text-decoration:underline;
+}
+.actions button.widget-button, .actions button.widget-button.reply {
+  background-color:#c8c8c8;
+  color:#000;
+  opacity:0.9 !important;
+}
+.topic-body blockquote  {
+  background-color: #1b1b1b !important;
+  border: 1px solid #ccc;
+  color: #fff !important;
+}
+.btn-primary {
+  background-color:#fff !important;
+  background-image:none;
+  color:#000 !important;
+}
+#reply-control{
+ background-color:#212224;
+}
+a.mention {
+ background-color:#212224;
+}
+.topic-map  {
+  background-color: #c8c8c8;
+}
+aside.onebox header a[href]{
+ color: #30659b;
+}
+.timeline-container .topic-timeline {
+  background: #25292c;
+  background-color: #1b1b1b;
+  box-shadow: 0 0 0 0 #1b1b1b;
+  //box-shadow: none;
+}
+aside.quote .title {
+   color:#000;
+   background-color: #c8c8c8;
+   opacity:0.9;
+ }
+.list-controls .category-dropdown-menu {
+  //background-color: #c8c8c8
+}
