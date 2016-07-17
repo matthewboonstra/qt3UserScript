@@ -93,11 +93,13 @@
     function usercardMutationHandler (mutationRecords) 
     {
         $(document).trigger("qt3script:userCardChanged");
+        if (console) console.log("qt3script:userCardChanged");
     }
     
     function postsMutationHandler (mutationRecords) 
     {
         $(document).trigger("qt3script:postsChanged");
+        if (console) console.log("qt3script:postsChanged");
     }
     
     function setupMutationObservers()
