@@ -105,7 +105,7 @@
         var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
         var usercardObserver = new MutationObserver (usercardMutationHandler);
         var postsObserver = new MutationObserver (postsMutationHandler);
-        usercardObserver.observe($('div#user-card')[0], { childList: true, subtree: true});
+        usercardObserver.observe($('div#user-card')[0], { childList: true});
         postsObserver.observe($('div.posts-wrapper')[0], { childList: true, subtree: true});
     }
     
