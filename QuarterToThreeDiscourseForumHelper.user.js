@@ -10,12 +10,19 @@
 
 (function() {
     'use strict';
+    
+    var normalThemeCss = "";
+    var nightThemeCss = "http://198.199.78.220/qt3NightTheme.css";
+    var themeCssList = [normalThemeCss, nightThemeCss];
+    
+    var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
 
     var username;
     var mutedUsernames;
     var userJsonURL;
     var jQMuteBtn;
     var customCss;
+    var enableConsoleOutput = true;
     
     function gotUserJson(data)
     {
@@ -72,6 +79,7 @@
     
     function saveCustomCss(newCustomCss)
     {
+        logToConsole("saving new custom css:" + newCustomCss);
         var customCssDataObj = {user_fields: {9: newCustomCss}};
         $.ajax({
             data: customCssDataObj,
@@ -90,25 +98,66 @@
         $('ul.usercard-controls').append(jQMuteBtn);
     }
     
-    function usercardMutationHandler (mutationRecords) 
+    function saveThemeSelection()
     {
-        $(document).trigger("qt3script:userCardChanged");
-        if (console) console.log("qt3script:userCardChanged");
+        var selectedThemeValue = parseInt($("#qt3script-theme-select option:selected").val());
+        window.setTimeout(function() {saveCustomCss(themeCssList[selectedThemeValue]);},500);
     }
     
-    function postsMutationHandler (mutationRecords) 
+    function addThemePrefsToPrefsPage()
+    {
+        if ($("section.user-preferences form").length>0)
+        {
+            var themeDD = $("<div class='control-group pref-theme'><label class='control-label'>Themes</label><div class='controls'><select id='qt3script-theme-select'><option value='0'>Normal</option><option value='1'>Night theme</option></select></div></div>");
+            $("section.user-preferences form .muting").after(themeDD);
+            themeDD.find("select").select2();
+            $("button.save-user").click(saveThemeSelection);
+        }
+        else {
+            // poor man's event catching
+            window.setTimeout(addThemePrefsToPrefsPage,500);
+        }
+    }
+    
+    function usercardMutationHandler(mutationRecords) 
+    {
+        $(document).trigger("qt3script:userCardChanged");
+        logToConsole("qt3script:userCardChanged");
+    }
+    
+    function postsMutationHandler(mutationRecords) 
     {
         $(document).trigger("qt3script:postsChanged");
-        if (console) console.log("qt3script:postsChanged");
+        logToConsole("qt3script:postsChanged");
     }
     
     function setupMutationObservers()
     {
-        var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
-        var usercardObserver = new MutationObserver (usercardMutationHandler);
-        var postsObserver = new MutationObserver (postsMutationHandler);
-        usercardObserver.observe($('div#user-card')[0], { childList: true});
-        postsObserver.observe($('div.posts-wrapper')[0], { childList: true, subtree: true});
+        var usercardObserver = new MutationObserver(usercardMutationHandler);
+        var postsObserver = new MutationObserver(postsMutationHandler);
+        if ($('div#user-card').length>0)
+        {
+            usercardObserver.observe($('div#user-card')[0], { childList: true});
+        }
+        if ($('div.posts-wrapper').length>0)
+        {
+            postsObserver.observe($('div.posts-wrapper')[0], { childList: true, subtree: true});
+        }
+    }
+    
+    function logToConsole(logStr)
+    {
+        if (enableConsoleOutput && console) console.log(logStr);
+    }
+    
+    function isPreferencesPage()
+    {
+        if (window.location.href.indexOf("/preferences")>0)
+        {
+            return true;
+        }
+        
+        return false;
     }
     
     function init() {
@@ -123,7 +172,7 @@
         
         // load css for muting users
         $('head').append('<link rel="stylesheet" href="http://198.199.78.220/qt3Script.css" type="text/css" />');
-        saveCustomCss("http://198.199.78.220/qt3NightTheme.css");
+        //saveCustomCss("http://198.199.78.220/qt3NightTheme.css");
         
         setupMutationObservers();
         
@@ -131,7 +180,11 @@
         $(document).on("qt3script:gotCustomCss", loadCustomCss);
         $(document).on("qt3script:postsChanged", hideMutedUserPosts);
         $(document).on("qt3script:userCardChanged",addMuteButtonToUserCard);
-        //$(document).on("qt3script:postsChanged", function() {if (console) console.log("posts change detected");});
+        
+        if (isPreferencesPage())
+        {
+            addThemePrefsToPrefsPage();
+        }
         
         $.getJSON(userJsonURL, gotUserJson);
     }
