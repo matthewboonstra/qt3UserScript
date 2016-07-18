@@ -106,7 +106,7 @@
     
     function addThemePrefsToPrefsPage()
     {
-        if ($("section.user-preferences form").length>0)
+        if ($("section.user-preferences form .muting").length>0)
         {
             var themeDD = $("<div class='control-group pref-theme'><label class='control-label'>Themes</label><div class='controls'><select id='qt3script-theme-select'><option value='0'>Normal</option><option value='1'>Night theme</option></select></div></div>");
             $("section.user-preferences form .muting").after(themeDD);
@@ -114,7 +114,7 @@
             $("button.save-user").click(saveThemeSelection);
         }
         else {
-            // poor man's event catching
+            // poor man's page load timer
             window.setTimeout(addThemePrefsToPrefsPage,500);
         }
     }
