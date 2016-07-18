@@ -22,7 +22,7 @@
     var userJsonURL;
     var jQMuteBtn;
     var customCss;
-    var enableConsoleOutput = true;
+    var enableConsoleOutput = false;
     
     function gotUserJson(data)
     {
