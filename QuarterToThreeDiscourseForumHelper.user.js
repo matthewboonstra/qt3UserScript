@@ -1,11 +1,12 @@
 // ==UserScript==
 // @name         QuarterToThree Discourse Forum Helper
-// @namespace    http://forum.quartertothree.com
-// @version      0.3
+// @namespace    https://github.com/matthewboonstra/qt3UserScript/
+// @version      0.31
 // @description  A User Script for the new QuarterToThree forum on Discourse.
 // @author       arrendek
 // @match        *://forum.quartertothree.com/*
 // @grant        none
+// @downloadURL  https://github.com/matthewboonstra/qt3UserScript/raw/master/QuarterToThreeDiscourseForumHelper.user.js
 // ==/UserScript==
 
 (function() {
