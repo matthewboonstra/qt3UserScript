@@ -12,6 +12,8 @@
 (function() {
     'use strict';
     
+    var scriptCssUrl = "https://raw.githubusercontent.com/matthewboonstra/qt3UserScript/master/qt3Script.css";
+    
     var normalThemeCss = "";
     var nightThemeCss = "http://198.199.78.220/qt3NightTheme.css";
     var themeCssList = [normalThemeCss, nightThemeCss];
@@ -263,7 +265,7 @@
         userJsonURL = "/users/"+username+".json";
         
         // load css for muting users
-        $('head').append('<link rel="stylesheet" href="http://198.199.78.220/qt3Script.css" type="text/css" />');
+        $('head').append('<link rel="stylesheet" href="' + scriptCssUrl + '" type="text/css" />');
         
         jQMuteBtn = $('<li><a class="btn btn-warning"><i class="fa fa-ban"></i>Mute User</a></li>').click(muteBtnClick);
         
