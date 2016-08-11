@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QuarterToThree Discourse Forum Helper
 // @namespace    https://github.com/matthewboonstra/qt3UserScript/
-// @version      0.31
+// @version      0.32
 // @description  A User Script for the new QuarterToThree forum on Discourse.
 // @author       arrendek
 // @match        *://forum.quartertothree.com/*
@@ -12,10 +12,10 @@
 (function() {
     'use strict';
     
-    var scriptCssUrl = "https://raw.githubusercontent.com/matthewboonstra/qt3UserScript/master/qt3Script.css";
+    var scriptCssUrl = "https://cdn.rawgit.com/matthewboonstra/qt3UserScript/master/qt3Script.css";
     
     var normalThemeCss = "";
-    var nightThemeCss = "http://198.199.78.220/qt3NightTheme.css";
+    var nightThemeCss = "https://cdn.rawgit.com/matthewboonstra/qt3UserScript/master/qt3NightTheme.css";
     var themeCssList = [normalThemeCss, nightThemeCss];
     
     var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
