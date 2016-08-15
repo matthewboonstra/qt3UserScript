@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QuarterToThree Discourse Forum Helper
 // @namespace    https://github.com/matthewboonstra/qt3UserScript/
-// @version      0.33
+// @version      0.34
 // @description  A User Script for the new QuarterToThree forum on Discourse.
 // @author       arrendek
 // @match        *://forum.quartertothree.com/*
@@ -77,15 +77,21 @@
         jQObj.addClass("qt3script-revealed").removeClass("qt3script-hidden");
     }
     
+    function revealHiddenAside()
+    {
+        var jQObj = $(this);
+        jQObj.addClass("qt3script-revealed").removeClass("qt3script-hidden");
+    }
+    
     function hideMutedUserPosts()
     {
         // Using Fishbreath's styles from https://forum.quartertothree.com/t/the-stylish-user-css-library-wiki-post/120128
         
         $("article").each(function() {
             var jQObj = $(this);
-            var postUsername = jQObj.find("a[data-user-card]").attr("data-user-card");
             if (!jQObj.find("div.contents").hasClass("qt3script-revealed"))
             {
+                var postUsername = jQObj.find("a[data-user-card]").attr("data-user-card");
 				if ($.inArray(postUsername,mutedUsernames)>=0)
 				{
 					jQObj.find("div.contents").addClass("qt3script-hidden").addClass("qt3script-mute");
@@ -93,6 +99,21 @@
                     // this would need it's own $("aside").each() thing like the article one just above
                     //$("aside div.title:contains('"+postUsername+"')").parent().addClass("qt3script-hidden").click(revealHiddenPost);
 				}
+            }
+        });
+        
+        $("aside[data-post]").each(function() {
+            var jQObj = $(this);
+            if (!jQObj.hasClass("qt3script-revealed"))
+            {
+                var asideUsername = $.trim(jQObj.find("div.title").text());
+                // remove ":" character
+                asideUsername = asideUsername.substr(0,asideUsername.length-1);
+                if ($.inArray(asideUsername,mutedUsernames)>=0)
+				{
+                    jQObj.addClass("qt3script-hidden").addClass("qt3script-mute");
+					jQObj.click(revealHiddenAside);
+                }
             }
         });
     }
