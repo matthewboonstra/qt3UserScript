@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QuarterToThree Discourse Forum Helper
 // @namespace    https://github.com/matthewboonstra/qt3UserScript/
-// @version      0.32
+// @version      0.33
 // @description  A User Script for the new QuarterToThree forum on Discourse.
 // @author       arrendek
 // @match        *://forum.quartertothree.com/*
@@ -25,6 +25,7 @@
     var userJsonURL;
     var customCss;
     var enableConsoleOutput = false;
+    var customCssFieldNum = 10;
     
     var lastWindowHref;
     
@@ -35,7 +36,22 @@
     function gotUserJson(data)
     {
         mutedUsernames = data.user.muted_usernames;
-        customCss = data.user.user_fields[9];
+        // detect earlier saved theme and update to correct field
+        if (data.user.user_fields[9] && data.user.user_fields[9].indexOf && data.user.user_fields[9].indexOf(".css")>0)
+        {
+            customCss = data.user.user_fields[9];
+            logToConsole("erasing custom css from twitch field and resaving to correct field ",true);
+            var customCssDataObj = {user_fields: {9: ""}};
+            customCssDataObj.user_fields[customCssFieldNum] = customCss;
+            $.ajax({
+                data: customCssDataObj,
+                url: userJsonURL,
+                method: "put"
+            }).done(function() {location.reload();});
+        }
+        else {
+            customCss = data.user.user_fields[customCssFieldNum];
+        }
         $(document).trigger("qt3script:gotMutedUserNames");
         $(document).trigger("qt3script:gotCustomCss");
     }
@@ -47,7 +63,6 @@
             $('head').append('<link rel="stylesheet" href="'+customCss+'" type="text/css" />');
             /*if ($("#qt3script-theme-select").length>0)
             {
-                debugger;
                 var customCssListIndex = $.inArray(customCss,themeCssList);
                 if (customCssListIndex>=0) {
                     $("#qt3script-theme-select").select2("val",customCssListIndex);
@@ -64,7 +79,7 @@
     
     function hideMutedUserPosts()
     {
-        // Using Fishbreath's styles from http://forum.quartertothree.com/t/the-stylish-user-css-library-wiki-post/120128
+        // Using Fishbreath's styles from https://forum.quartertothree.com/t/the-stylish-user-css-library-wiki-post/120128
         
         $("article").each(function() {
             var jQObj = $(this);
@@ -94,12 +109,13 @@
         hideMutedUserPosts();
     }
     
-    function saveCustomCss(newCustomCss)
+    function saveCustomCss(newCustomCss,force)
     {
-        if (newCustomCss != customCss)
+        if ((force===true) || (newCustomCss != customCss))
         {
             logToConsole("saving new custom css:" + newCustomCss);
-            var customCssDataObj = {user_fields: {9: newCustomCss}};
+            var customCssDataObj = {user_fields: {}};
+            customCssDataObj.user_fields[customCssFieldNum] = newCustomCss;
             $.ajax({
                 data: customCssDataObj,
                 url: userJsonURL,
@@ -197,9 +213,9 @@
         
     }
     
-    function logToConsole(logStr)
+    function logToConsole(logStr,force)
     {
-        if (enableConsoleOutput && console) console.log("qt3script: " + logStr);
+        if ((force || enableConsoleOutput) && console) console.log("qt3script: " + logStr);
     }
     
     function isPreferencesPage()
