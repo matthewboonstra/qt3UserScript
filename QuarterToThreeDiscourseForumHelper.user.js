@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QuarterToThree Discourse Forum Helper
 // @namespace    https://github.com/matthewboonstra/qt3UserScript/
-// @version      0.34.1
+// @version      0.35.0
 // @description  A User Script for the new QuarterToThree forum on Discourse.
 // @author       arrendek
 // @match        *://forum.quartertothree.com/*
@@ -15,6 +15,11 @@
     //var scriptCssUrl = "https://cdn.rawgit.com/matthewboonstra/qt3UserScript/master/qt3Script.css";
     // specific commit version for new css change
     var scriptCssUrl = "https://cdn.rawgit.com/matthewboonstra/qt3UserScript/e21f7507095350654ee94fb0b9341e4dfe55fb6a/qt3Script.css";
+    
+    // iframe tracker for youtube embeds
+    var iframeTrackingUrl = "https://cdn.rawgit.com/vincepare/iframeTracker-jquery/56960ccf4bc600754348832e7e5fdc092e562d35/jquery.iframetracker.js";
+    
+    var trackedIframes = [];
     
     var normalThemeCss = "";
     var nightThemeCss = "https://cdn.rawgit.com/matthewboonstra/qt3UserScript/master/qt3NightTheme.css";
@@ -292,6 +297,89 @@
         hideMutedUserPosts();
     }
     
+    function killScrolling()
+    {
+        logToConsole("adding scroll handler");  
+        $(document).on("scroll", function() {return false; });
+        window.setTimeout(function() 
+          {
+            logToConsole("removing scroll handler"); 
+            $(document).off("scroll",$.tempFn);
+          },1500); 
+        $(document).scroll();
+    }
+    
+    function iframeTracker(jqObj)
+    {
+        jqObj.iframeTracker({
+            blurCallback: function(){
+                // Do something when iframe is clicked (like firing an XHR request)
+                // You can know which iframe element is clicked via this._overId
+                logToConsole('iframe clicked');
+                killScrolling();
+            }/*,
+            overCallback: function(element){
+                this._overId = $(element).parents('.iframe_wrap').attr('id'); // Saving the iframe wrapper id
+            },
+            outCallback: function(element){
+                this._overId = null; // Reset hover iframe wrapper id
+            },
+            _overId: null*/
+        });
+    }
+    
+    function iframeTrackingTester() {
+        var newTrackedIframes = [];
+        $("iframe").each(
+            //if not in trackediframes, add to new trackediframes
+            function() {
+                var postId = $(this).parents("article").attr("data-post-id");
+                var YtId = $(this).parent().attr("data-youtube-id");
+                
+                if (!postId || !YtId) return;
+                
+                // turn off autoplay?
+                var src = $(this).attr("src");
+                var autoplayPos = src.indexOf("autoplay=1");
+                if (autoplayPos<0) autoplayPos = null;
+                else autoplayPos += 9;
+                
+                if (autoplayPos!==null) {
+                    src = src.substr(0,autoplayPos) + "0" + src.substr(autoplayPos+1);
+                    $(this).attr("src",src);
+                }
+                
+                
+                
+                if (!trackedIframes || $.inArray(postId+"-"+YtId, trackedIframes)<0) {
+                  newTrackedIframes.push($(this));
+                  trackedIframes.push(postId+"-"+YtId);
+                }
+            }
+        );
+        
+        $.each(newTrackedIframes,function(index,val) {iframeTracker(val); });
+        
+        // make sure all those tracked iframe keys still have the corresponding videos on the page, since a long scroll can remove them from the DOM
+        var removeTrackingOn = [];
+        $.each(trackedIframes,function(index,val) { 
+            var dashLoc = val.indexOf("-");
+            var postId = val.substr(0,dashLoc);
+            var YtId = val.substr(dashLoc+1);
+            if ($("article[data-post-id='"+postId+"']").find("div[data-youtube-id='"+YtId+"']").length<=0)
+            {
+                // remove this tracked iframe
+                removeTrackingOn.push(val);
+            }
+        });
+  
+        if (removeTrackingOn.length>0)
+        {
+            trackedIframes = trackedIframes.filter( function( el ) {
+                return removeTrackingOn.indexOf( el ) < 0; });
+        }
+    }
+    
     function init() {
         if ($("#main-outlet").length>0)
         {
@@ -303,18 +391,21 @@
         username = $("#current-user img").attr("title");
         userJsonURL = "/users/"+username+".json";
         
-        // load css for muting users
-        $('head').append('<link rel="stylesheet" href="' + scriptCssUrl + '" type="text/css" />');
+        
+        
+        
         
         jQMuteBtn = $('<li><a class="btn btn-warning"><i class="fa fa-ban"></i>Mute User</a></li>').click(muteBtnClick);
         
         $(document).on("qt3script:gotMutedUserNames", hideMutedUserPosts);
         $(document).on("qt3script:gotCustomCss", loadCustomCss);
         $(document).on("qt3script:postsChanged", hideMutedUserPosts);
+        $(document).on("qt3script:postsChanged", iframeTrackingTester);
         $(document).on("qt3script:userCardChanged",addMuteButtonToUserCard);
         $(document).on("qt3script:newPageLoaded",newPageLoaded);
         //$(document).on("qt3script:mainOutletChanged",checkForNewPage);
         //$(document).on("qt3script:mainOutletChanged",function() {$(document).trigger("qt3script:newPageLoaded");});
+        
         
         // ugh, sorry
         window.setInterval(checkForNewPage,500);
@@ -323,6 +414,13 @@
         
         $.getJSON(userJsonURL, gotUserJson);
     }
+    
+    // don't wait for ready to add these scripts/css?
+    // load iframe tracking js
+        $('head').append('<script src="' + iframeTrackingUrl + '" ></script>');
+    
+    // load css for muting users
+        $('head').append('<link rel="stylesheet" href="' + scriptCssUrl + '" type="text/css" />');
     
     $(function(){init();});
 })();
