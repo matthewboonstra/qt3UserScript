@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QuarterToThree Discourse Forum Helper
 // @namespace    https://github.com/matthewboonstra/qt3UserScript/
-// @version      0.35.0
+// @version      0.35.1
 // @description  A User Script for the new QuarterToThree forum on Discourse.
 // @author       arrendek
 // @match        *://forum.quartertothree.com/*
@@ -297,14 +297,19 @@
         hideMutedUserPosts();
     }
     
+    function handleScrollEvent()
+    {
+        return false;
+    }
+    
     function killScrolling()
     {
         logToConsole("adding scroll handler");  
-        $(document).on("scroll", function() {return false; });
+        $(document).on("scroll", handleScrollEvent);
         window.setTimeout(function() 
           {
             logToConsole("removing scroll handler"); 
-            $(document).off("scroll",$.tempFn);
+            $(document).off("scroll",handleScrollEvent);
           },1500); 
         $(document).scroll();
     }
