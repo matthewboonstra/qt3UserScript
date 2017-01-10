@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QuarterToThree Discourse Forum Helper
 // @namespace    https://github.com/matthewboonstra/qt3UserScript/
-// @version      0.35.1
+// @version      0.36.0
 // @description  A User Script for the new QuarterToThree forum on Discourse.
 // @author       arrendek
 // @match        *://forum.quartertothree.com/*
@@ -33,6 +33,7 @@
     var customCss;
     var enableConsoleOutput = false;
     var customCssFieldNum = 10;
+    var ignorePostsChanged = false;
     
     var lastWindowHref;
     
@@ -205,8 +206,14 @@
     
     function postsMutationHandler(mutationRecords) 
     {
-        $(document).trigger("qt3script:postsChanged");
-        logToConsole("qt3script:postsChanged");
+        if (!ignorePostsChanged)
+        {
+            $(document).trigger("qt3script:postsChanged");
+            logToConsole("qt3script:postsChanged");
+        }
+        else {
+            logToConsole("[ignored] qt3script:postsChanged");
+        }
     }
     
     function mainOutletMutationHandler(mutationRecords) 
@@ -354,8 +361,6 @@
                     $(this).attr("src",src);
                 }
                 
-                
-                
                 if (!trackedIframes || $.inArray(postId+"-"+YtId, trackedIframes)<0) {
                   newTrackedIframes.push($(this));
                   trackedIframes.push(postId+"-"+YtId);
@@ -385,6 +390,12 @@
         }
     }
     
+    function replaceDateTimeStamp()
+    {
+        //$(".post-info span.relative-date").not(".qt3script-datefix").each(function() {$(this).addClass("qt3script-datefix").text($(this).attr("title"));});
+        $(".post-info span.relative-date").not(":has(span.qt3script-dfspan)").each(function() {$(this).addClass("qt3script-datefix").html("<span class='qt3script-dfspan'>" + $(this).attr("title") + "</span>");});
+    }
+    
     function init() {
         if ($("#main-outlet").length>0)
         {
@@ -395,10 +406,7 @@
         logToConsole("init");
         username = $("#current-user img").attr("title");
         userJsonURL = "/users/"+username+".json";
-        
-        
-        
-        
+        replaceDateTimeStamp();
         
         jQMuteBtn = $('<li><a class="btn btn-warning"><i class="fa fa-ban"></i>Mute User</a></li>').click(muteBtnClick);
         
@@ -406,11 +414,12 @@
         $(document).on("qt3script:gotCustomCss", loadCustomCss);
         $(document).on("qt3script:postsChanged", hideMutedUserPosts);
         $(document).on("qt3script:postsChanged", iframeTrackingTester);
+        $(document).on("qt3script:postsChanged", replaceDateTimeStamp);
         $(document).on("qt3script:userCardChanged",addMuteButtonToUserCard);
         $(document).on("qt3script:newPageLoaded",newPageLoaded);
+        $(document).on("qt3script:newPageLoaded",replaceDateTimeStamp);
         //$(document).on("qt3script:mainOutletChanged",checkForNewPage);
         //$(document).on("qt3script:mainOutletChanged",function() {$(document).trigger("qt3script:newPageLoaded");});
-        
         
         // ugh, sorry
         window.setInterval(checkForNewPage,500);
