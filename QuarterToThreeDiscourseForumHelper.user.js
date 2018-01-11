@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QuarterToThree Discourse Forum Helper
 // @namespace    https://github.com/matthewboonstra/qt3UserScript/
-// @version      0.36.0
+// @version      0.37.0
 // @description  A User Script for the new QuarterToThree forum on Discourse.
 // @author       arrendek
 // @match        *://forum.quartertothree.com/*
@@ -16,69 +16,45 @@
     // specific commit version for new css change
     var scriptCssUrl = "https://cdn.rawgit.com/matthewboonstra/qt3UserScript/e21f7507095350654ee94fb0b9341e4dfe55fb6a/qt3Script.css";
     
-    // iframe tracker for youtube embeds
-    var iframeTrackingUrl = "https://cdn.rawgit.com/vincepare/iframeTracker-jquery/56960ccf4bc600754348832e7e5fdc092e562d35/jquery.iframetracker.js";
-    
-    var trackedIframes = [];
-    
-    var normalThemeCss = "";
-    var nightThemeCss = "https://cdn.rawgit.com/matthewboonstra/qt3UserScript/master/qt3NightTheme.css";
-    var themeCssList = [normalThemeCss, nightThemeCss];
-    
     var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
 
     var username;
     var mutedUsernames;
     var userJsonURL;
-    var customCss;
     var enableConsoleOutput = false;
     var customCssFieldNum = 10;
     var ignorePostsChanged = false;
+
+    var userOptions;
     
     var lastWindowHref;
-    
     var usercardObserver, postsObserver, mainOutletObserver;
     
-    var jQMuteBtn;
-    
+    var windowHeight, windowWidth;
+
+    var prefsPageAttemptNum = 0;
+
+    // utilities
+    function logToConsole(logStr,force)
+    {
+        if ((force || enableConsoleOutput) && console) console.log("qt3script: " + logStr);
+    }
+
+    // main functions
     function gotUserJson(data)
     {
         mutedUsernames = data.user.muted_usernames;
-        // detect earlier saved theme and update to correct field
-        if (data.user.user_fields[9] && data.user.user_fields[9].indexOf && data.user.user_fields[9].indexOf(".css")>0)
-        {
-            customCss = data.user.user_fields[9];
-            logToConsole("erasing custom css from twitch field and resaving to correct field ",true);
-            var customCssDataObj = {user_fields: {9: ""}};
-            customCssDataObj.user_fields[customCssFieldNum] = customCss;
-            $.ajax({
-                data: customCssDataObj,
-                url: userJsonURL,
-                method: "put"
-            }).done(function() {location.reload();});
-        }
-        else {
-            customCss = data.user.user_fields[customCssFieldNum];
-        }
+        userOptions = data.user.user_fields[customCssFieldNum];
+        
         $(document).trigger("qt3script:gotMutedUserNames");
-        $(document).trigger("qt3script:gotCustomCss");
+        $(document).trigger("qt3script:gotUserOptions");
     }
-    
-    function loadCustomCss()
+
+    function loadUserOptions()
     {
-        if (customCss)
-        {
-            $('head').append('<link rel="stylesheet" href="'+customCss+'" type="text/css" />');
-            /*if ($("#qt3script-theme-select").length>0)
-            {
-                var customCssListIndex = $.inArray(customCss,themeCssList);
-                if (customCssListIndex>=0) {
-                    $("#qt3script-theme-select").select2("val",customCssListIndex);
-                }
-            }*/
-        }
+        logToConsole(userOptions);
     }
-    
+
     function revealHiddenPost()
     {
         var jQObj = $(this);
@@ -90,17 +66,20 @@
         var jQObj = $(this);
         jQObj.addClass("qt3script-revealed").removeClass("qt3script-hidden");
     }
+
+    function userIsMuted(username)
+    {
+        return $.inArray(username,mutedUsernames)>=0;
+    }
     
     function hideMutedUserPosts()
     {
-        // Using Fishbreath's styles from https://forum.quartertothree.com/t/the-stylish-user-css-library-wiki-post/120128
-        
         $("article").each(function() {
             var jQObj = $(this);
             if (!jQObj.find("div.contents").hasClass("qt3script-revealed"))
             {
                 var postUsername = jQObj.find("a[data-user-card]").attr("data-user-card");
-				if ($.inArray(postUsername,mutedUsernames)>=0)
+				if (userIsMuted(postUsername))
 				{
 					jQObj.find("div.contents").addClass("qt3script-hidden").addClass("qt3script-mute");
 					jQObj.find("div.contents").click(revealHiddenPost);
@@ -117,7 +96,7 @@
                 var asideUsername = $.trim(jQObj.find("div.title").text());
                 // remove ":" character
                 asideUsername = asideUsername.substr(0,asideUsername.length-1);
-                if ($.inArray(asideUsername,mutedUsernames)>=0)
+                if (userIsMuted(asideUsername))
 				{
                     jQObj.addClass("qt3script-hidden").addClass("qt3script-mute");
 					jQObj.click(revealHiddenAside);
@@ -125,76 +104,193 @@
             }
         });
     }
-    
-    function addUserToIgnoreList(usernameToMute)
+
+    function unmutePostsByUser(usernameToUnMute)
     {
-        mutedUsernames.push(usernameToMute);
-        var mutedUserNamesDataObj = {muted_usernames: mutedUsernames.join()};
-        $.ajax({
-            data: mutedUserNamesDataObj,
-            url: userJsonURL,
-            method: "put"
+        $("article:has(div.qt3script-mute)").each(function() {
+            var jQObj = $(this);
+            var postUsername = jQObj.find("a[data-user-card]").attr("data-user-card");
+            if (postUsername===usernameToUnMute)
+            {
+                jQObj.find("div.contents").removeClass("qt3script-hidden").removeClass("qt3script-mute").removeClass("qt3script-revealed");
+            }
         });
-        hideMutedUserPosts();
+
+        $("aside[data-post]").each(function() {
+            var jQObj = $(this);
+            var asideUsername = $.trim(jQObj.find("div.title").text());
+            // remove ":" character
+            asideUsername = asideUsername.substr(0,asideUsername.length-1);
+            if (asideUsername===usernameToUnMute)
+            {
+                jQObj.removeClass("qt3script-hidden").removeClass("qt3script-mute").removeClass("qt3script-revealed");
+            }
+        });
     }
     
-    function saveCustomCss(newCustomCss,force)
+    function saveUserOptions(newUserOptions,force)
     {
-        if ((force===true) || (newCustomCss != customCss))
+        if ((force===true) || (newUserOptions != userOptions))
         {
-            logToConsole("saving new custom css:" + newCustomCss);
-            var customCssDataObj = {user_fields: {}};
-            customCssDataObj.user_fields[customCssFieldNum] = newCustomCss;
+            logToConsole("saving new user options: " + newUserOptions);
+            var userOptionsDataObj = {user_fields: {}};
+            userOptionsDataObj.user_fields[customCssFieldNum] = newUserOptions;
             $.ajax({
-                data: customCssDataObj,
+                data: userOptionsDataObj,
                 url: userJsonURL,
                 method: "put"
             }).done(function() {location.reload();});
         }
     }
     
-    function muteBtnClick(a,b,c)
+    function muteBtnClick()
     {
         addUserToIgnoreList($('div#user-card h1.username a').text().trim());
+        removeMuteButtonFromUserCard();
+        addMuteButtonToUserCard();
     }
-    
-    function addMuteButtonToUserCard(a,b,c)
+
+    function unmuteBtnClick()
     {
-        jQMuteBtn = $('<li><a class="btn btn-warning"><i class="fa fa-ban"></i>Mute User</a></li>').click(muteBtnClick);
-        $('ul.usercard-controls').append(jQMuteBtn);
+        removeUserFromIgnoreList($('div#user-card h1.username a').text().trim());
+        removeMuteButtonFromUserCard();
+        addMuteButtonToUserCard();
+    }
+
+    function saveMutedUsernames(successFn)
+    {
+        var mutedUserNamesDataObj = {muted_usernames: mutedUsernames.join()};
+        $.ajax({
+            data: mutedUserNamesDataObj,
+            url: userJsonURL,
+            method: "put",
+            success: successFn
+        });
+    }
+
+    function addUserToIgnoreList(usernameToMute)
+    {
+        mutedUsernames.push(usernameToMute);
+        saveMutedUsernames(hideMutedUserPosts);
+    }
+
+    function removeUserFromIgnoreList(usernameToUnMute)
+    {
+        if (!userIsMuted(usernameToUnMute)) return;
+
+        mutedUsernames = $.grep(mutedUsernames, function(uname) { return uname !== usernameToUnMute; });
+        saveMutedUsernames(function () {unmutePostsByUser(usernameToUnMute); });
+    }
+
+    function removeMuteButtonFromUserCard()
+    {
+        $('div#user-card .qt3script-button.qt3script-muting').remove();
     }
     
+    function addMuteButtonToUserCard()
+    {
+        var jQMuteBtn = $('<li class="qt3script-button qt3script-muting"><a class="btn btn-warning"><i class="fa fa-ban"></i>Mute User</a></li>').click(muteBtnClick);
+        var jQUnMuteBtn = $('<li class="qt3script-button qt3script-muting"><a class="btn btn-warning"><i class="fa fa-ban"></i>Unmute User</a></li>').click(unmuteBtnClick);
+
+        $('div#user-card').each(function() {
+            var userCardObj = $(this);
+            var uname = userCardObj.find('h1.username a').text().trim();
+            var btnToAppend = userIsMuted(uname)?jQUnMuteBtn:jQMuteBtn;
+            userCardObj.find('ul.usercard-controls').append(btnToAppend);
+        });
+    }
+
+    /*
     function saveThemeSelection()
     {
         var selectedThemeValue = parseInt($("#qt3script-theme-select option:selected").val());
-        window.setTimeout(function() {saveCustomCss(themeCssList[selectedThemeValue]);},500);
+        window.setTimeout(function() {saveUserOptions(themeCssList[selectedThemeValue]);},500);
     }
-    
-    function addThemePrefsToPrefsPage()
+    */
+
+    function revealPrefsScriptOptionsPanel()
     {
-        if ($("section.user-preferences form div.muting").length>0)
+        $("form#qt3script-optionsform").css("display","block");
+    }
+
+    function hidePrefsScriptOptionsPanel()
+    {
+        $("form#qt3script-optionsform").css("display","none");
+    }
+
+    function createPrefsScriptOptionsPanel()
+    {
+        var userScriptOptionsPrefsForm = $('<form id="qt3script-optionsform" style="display:none" class="form-vertical" style=""><div class="control-group pref-userscriptoptions"><label class="control-label">User Script Options</label></form>');
+        var controls = [];
+        controls[0] = '<div class="controls controls-dropdown"><label>Coming Sooner or Later, options!</label><select id="qt3script-theme-select"><option value="0">Normal</option><option value="1">Normaler</option></select><div class="select-kit-wrapper" style="width: 220px; height: 31.6px;"></div></div>';
+        userScriptOptionsPrefsForm.append(controls);
+        //$.each(controls, function(index,control) { userScriptOptionsPrefsForm.append(control); });
+
+        var prefsRightPanel = $("section.user-right.user-preferences");
+        prefsRightPanel.append(userScriptOptionsPrefsForm);
+        //userScriptOptionsPrefsForm.find("select").select2();
+        /*
+        var themeDD = $("<div class='control-group pref-theme'><label class='control-label'>Themes</label><div class='controls'><select id='qt3script-theme-select'><option value='0'>Normal</option><option value='1'>Night theme</option></select></div></div>");
+        $("section.user-preferences form div.muting").after(themeDD);
+        var themeSel2 = themeDD.find("select").select2();
+        themeSel2.change(function(evt){ $("div.user-field:nth(8) input").val(themeCssList[evt.val]);  });
+        */
+        //$("button.save-user").click(saveThemeSelection);
+
+        if (userOptions !== null)
         {
-            
-            
-            logToConsole("ready to add theme controls");
-            var themeDD = $("<div class='control-group pref-theme'><label class='control-label'>Themes</label><div class='controls'><select id='qt3script-theme-select'><option value='0'>Normal</option><option value='1'>Night theme</option></select></div></div>");
-            $("section.user-preferences form div.muting").after(themeDD);
-            var themeSel2 = themeDD.find("select").select2();
-            themeSel2.change(function(evt){ $("div.user-field:nth(8) input").val(themeCssList[evt.val]);  });
-            $("button.save-user").click(saveThemeSelection);
-            
-            if (customCss != null)
-            {
-                var customCssListIndex = $.inArray(customCss,themeCssList);
+            /*var customCssListIndex = $.inArray(customCss,themeCssList);
                 if (customCssListIndex>=0) {
                     $("#qt3script-theme-select").select2("val",customCssListIndex);
-                }
-            }
+                }*/
+        }
+    }
+
+    function scriptOptionsNavClick()
+    {
+        var prefsNavPanel = $("section.user-navigation .preferences-nav");
+        prefsNavPanel.find("li a").removeClass("active");
+        prefsNavPanel.find("li a#qt3script-scriptoptions-link").addClass("active");
+
+        var prefsRightPanel = $("section.user-right.user-preferences");
+        prefsRightPanel.children().css("display","none");
+        revealPrefsScriptOptionsPanel();
+        return false;
+    }
+
+    function prefsNavPanelClick()
+    {
+        // clear out changes to nav panel from options click
+        $(this).find("li a#qt3script-scriptoptions-link").removeClass("active");
+        var prefsRightPanel = $("section.user-right.user-preferences");
+        prefsRightPanel.children().css("display","");
+        hidePrefsScriptOptionsPanel();
+    }
+
+    function addScriptOptionsNavToPrefsPage()
+    {
+        var prefsNavPanel = $("section.user-navigation .preferences-nav");
+        if (prefsNavPanel.length>0)
+        {
+            prefsPageAttemptNum = 0;
+            if (prefsNavPanel.find('li.nav-qt3script-scriptoptions').length>0) return;
+            logToConsole("ready to add script options pref panel");
+            prefsNavPanel.click(prefsNavPanelClick);
+            var scriptOptionsNavEl = $('<li class="nav-qt3script-scriptoptions"><a href="/u/'+username+'/preferences/userscriptoptions" id="qt3script-scriptoptions-link">Qt3 User Script Options</span></li>').click(scriptOptionsNavClick);
+            prefsNavPanel.append(scriptOptionsNavEl);
+            createPrefsScriptOptionsPanel();
         }
         else {
             // poor man's page load timer
-            logToConsole("not ready to add theme controls");
-            window.setTimeout(addThemePrefsToPrefsPage,1000);
+            if (prefsPageAttemptNum<10)
+            {
+                logToConsole("not ready to add theme controls");
+                prefsPageAttemptNum++;
+                window.setTimeout(addScriptOptionsNavToPrefsPage,500);
+            }
+            else {
+                logToConsole("prefs page add options failed");
+            }
         }
     }
     
@@ -243,15 +339,9 @@
             postsObserver = new MutationObserver(postsMutationHandler);
             postsObserver.observe($('div.posts-wrapper')[0], { childList: true, subtree: true});
         }
-        
-        
-        
     }
     
-    function logToConsole(logStr,force)
-    {
-        if ((force || enableConsoleOutput) && console) console.log("qt3script: " + logStr);
-    }
+
     
     function isPreferencesPage()
     {
@@ -297,97 +387,11 @@
         if (isPreferencesPage())
         {
             logToConsole("prefs page land");
-            addThemePrefsToPrefsPage();
+            addScriptOptionsNavToPrefsPage();
         }
         
         setupMutationObservers();
         hideMutedUserPosts();
-    }
-    
-    function handleScrollEvent()
-    {
-        return false;
-    }
-    
-    function killScrolling()
-    {
-        logToConsole("adding scroll handler");  
-        $(document).on("scroll", handleScrollEvent);
-        window.setTimeout(function() 
-          {
-            logToConsole("removing scroll handler"); 
-            $(document).off("scroll",handleScrollEvent);
-          },1500); 
-        $(document).scroll();
-    }
-    
-    function iframeTracker(jqObj)
-    {
-        jqObj.iframeTracker({
-            blurCallback: function(){
-                // Do something when iframe is clicked (like firing an XHR request)
-                // You can know which iframe element is clicked via this._overId
-                logToConsole('iframe clicked');
-                killScrolling();
-            }/*,
-            overCallback: function(element){
-                this._overId = $(element).parents('.iframe_wrap').attr('id'); // Saving the iframe wrapper id
-            },
-            outCallback: function(element){
-                this._overId = null; // Reset hover iframe wrapper id
-            },
-            _overId: null*/
-        });
-    }
-    
-    function iframeTrackingTester() {
-        var newTrackedIframes = [];
-        $("iframe").each(
-            //if not in trackediframes, add to new trackediframes
-            function() {
-                var postId = $(this).parents("article").attr("data-post-id");
-                var YtId = $(this).parent().attr("data-youtube-id");
-                
-                if (!postId || !YtId) return;
-                
-                // turn off autoplay?
-                var src = $(this).attr("src");
-                var autoplayPos = src.indexOf("autoplay=1");
-                if (autoplayPos<0) autoplayPos = null;
-                else autoplayPos += 9;
-                
-                if (autoplayPos!==null) {
-                    src = src.substr(0,autoplayPos) + "0" + src.substr(autoplayPos+1);
-                    $(this).attr("src",src);
-                }
-                
-                if (!trackedIframes || $.inArray(postId+"-"+YtId, trackedIframes)<0) {
-                  newTrackedIframes.push($(this));
-                  trackedIframes.push(postId+"-"+YtId);
-                }
-            }
-        );
-        
-        $.each(newTrackedIframes,function(index,val) {iframeTracker(val); });
-        
-        // make sure all those tracked iframe keys still have the corresponding videos on the page, since a long scroll can remove them from the DOM
-        var removeTrackingOn = [];
-        $.each(trackedIframes,function(index,val) { 
-            var dashLoc = val.indexOf("-");
-            var postId = val.substr(0,dashLoc);
-            var YtId = val.substr(dashLoc+1);
-            if ($("article[data-post-id='"+postId+"']").find("div[data-youtube-id='"+YtId+"']").length<=0)
-            {
-                // remove this tracked iframe
-                removeTrackingOn.push(val);
-            }
-        });
-  
-        if (removeTrackingOn.length>0)
-        {
-            trackedIframes = trackedIframes.filter( function( el ) {
-                return removeTrackingOn.indexOf( el ) < 0; });
-        }
     }
     
     function replaceDateTimeStamp()
@@ -407,17 +411,17 @@
         username = $("#current-user img").attr("title");
         userJsonURL = "/users/"+username+".json";
         replaceDateTimeStamp();
-        
-        jQMuteBtn = $('<li><a class="btn btn-warning"><i class="fa fa-ban"></i>Mute User</a></li>').click(muteBtnClick);
-        
-        $(document).on("qt3script:gotMutedUserNames", hideMutedUserPosts);
-        $(document).on("qt3script:gotCustomCss", loadCustomCss);
+
         $(document).on("qt3script:postsChanged", hideMutedUserPosts);
-        $(document).on("qt3script:postsChanged", iframeTrackingTester);
         $(document).on("qt3script:postsChanged", replaceDateTimeStamp);
+
         $(document).on("qt3script:userCardChanged",addMuteButtonToUserCard);
+        $(document).on("qt3script:gotMutedUserNames", hideMutedUserPosts);
+        $(document).on("qt3script:gotUserOptions", loadUserOptions);
+
         $(document).on("qt3script:newPageLoaded",newPageLoaded);
         $(document).on("qt3script:newPageLoaded",replaceDateTimeStamp);
+
         //$(document).on("qt3script:mainOutletChanged",checkForNewPage);
         //$(document).on("qt3script:mainOutletChanged",function() {$(document).trigger("qt3script:newPageLoaded");});
         
@@ -427,14 +431,13 @@
         //newPageLoaded();
         
         $.getJSON(userJsonURL, gotUserJson);
+
+        // ugh, double sorry
+        //window.setTimeout(setupResizeObserver,200);
     }
     
-    // don't wait for ready to add these scripts/css?
-    // load iframe tracking js
-        $('head').append('<script src="' + iframeTrackingUrl + '" ></script>');
-    
     // load css for muting users
-        $('head').append('<link rel="stylesheet" href="' + scriptCssUrl + '" type="text/css" />');
+    $('head').append('<link rel="stylesheet" href="' + scriptCssUrl + '" type="text/css" />');
     
     $(function(){init();});
 })();
