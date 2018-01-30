@@ -7,6 +7,7 @@
 // @match        *://forum.quartertothree.com/*
 // @grant        none
 // @downloadURL  https://github.com/matthewboonstra/qt3UserScript/raw/master/QuarterToThreeDiscourseForumHelper.user.js
+// @require      http://code.jquery.com/jquery-1.12.4.min.js
 // ==/UserScript==
 
 (function() {
