@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name         QuarterToThree Discourse Forum Helper
 // @namespace    https://github.com/matthewboonstra/qt3UserScript/
-// @version      0.37.2
+// @version      0.38.0
 // @description  A User Script for the new QuarterToThree forum on Discourse.
 // @author       arrendek
 // @match        *://forum.quartertothree.com/*
 // @grant        none
 // @downloadURL  https://github.com/matthewboonstra/qt3UserScript/raw/master/QuarterToThreeDiscourseForumHelper.user.js
+// @require       http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js
 // ==/UserScript==
 
 (function() {
@@ -33,7 +34,7 @@
     var windowHeight, windowWidth;
 
     var prefsPageAttemptNum = 0;
-
+  
     // utilities
     function logToConsole(logStr,force)
     {
@@ -401,6 +402,9 @@
     }
     
     function init() {
+	// load css for muting users
+        $('head').append('<link rel="stylesheet" href="' + scriptCssUrl + '" type="text/css" />');
+	    
         if ($("#main-outlet").length>0)
         {
             mainOutletObserver = new MutationObserver(mainOutletMutationHandler);
@@ -435,9 +439,14 @@
         // ugh, double sorry
         //window.setTimeout(setupResizeObserver,200);
     }
-    
-    // load css for muting users
-    $('head').append('<link rel="stylesheet" href="' + scriptCssUrl + '" type="text/css" />');
-    
-    $(function(){init();});
+  
+    function waitForJQuery() {
+        if ($) {
+            clearInterval(waitForJQueryInterval);
+
+            $(function(){init();});
+        }
+    }
+
+    var waitForJQueryInterval = setInterval(waitForJQuery,500);
 })();
