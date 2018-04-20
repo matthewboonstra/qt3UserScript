@@ -1,21 +1,22 @@
 // ==UserScript==
 // @name         QuarterToThree Discourse Forum Helper
 // @namespace    https://github.com/matthewboonstra/qt3UserScript/
-// @version      0.38.1
+// @version      0.38.2
 // @description  A User Script for the new QuarterToThree forum on Discourse.
 // @author       arrendek
 // @match        *://forum.quartertothree.com/*
-// @grant        none
+// @grant        unsafeWindow
 // @downloadURL  https://github.com/matthewboonstra/qt3UserScript/raw/master/QuarterToThreeDiscourseForumHelper.user.js
+// @require       http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js
 // ==/UserScript==
 
 (function() {
     'use strict';
-    
+
     //var scriptCssUrl = "https://cdn.rawgit.com/matthewboonstra/qt3UserScript/master/qt3Script.css";
     // specific commit version for new css change
     var scriptCssUrl = "https://cdn.rawgit.com/matthewboonstra/qt3UserScript/e21f7507095350654ee94fb0b9341e4dfe55fb6a/qt3Script.css";
-    
+
     var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
 
     var username;
@@ -26,14 +27,14 @@
     var ignorePostsChanged = false;
 
     var userOptions;
-    
+
     var lastWindowHref;
     var usercardObserver, postsObserver, mainOutletObserver;
-    
+
     var windowHeight, windowWidth;
 
     var prefsPageAttemptNum = 0;
-  
+
     // utilities
     function logToConsole(logStr,force)
     {
@@ -45,7 +46,7 @@
     {
         mutedUsernames = data.user.muted_usernames;
         userOptions = data.user.user_fields[customCssFieldNum];
-        
+
         $(document).trigger("qt3script:gotMutedUserNames");
         $(document).trigger("qt3script:gotUserOptions");
     }
@@ -60,7 +61,7 @@
         var jQObj = $(this);
         jQObj.addClass("qt3script-revealed").removeClass("qt3script-hidden");
     }
-    
+
     function revealHiddenAside()
     {
         var jQObj = $(this);
@@ -71,7 +72,7 @@
     {
         return $.inArray(username,mutedUsernames)>=0;
     }
-    
+
     function hideMutedUserPosts()
     {
         $("article").each(function() {
@@ -88,7 +89,7 @@
 				}
             }
         });
-        
+
         $("aside[data-post]").each(function() {
             var jQObj = $(this);
             if (!jQObj.hasClass("qt3script-revealed"))
@@ -127,7 +128,7 @@
             }
         });
     }
-    
+
     function saveUserOptions(newUserOptions,force)
     {
         if ((force===true) || (newUserOptions != userOptions))
@@ -142,7 +143,7 @@
             }).done(function() {location.reload();});
         }
     }
-    
+
     function muteBtnClick()
     {
         addUserToIgnoreList($('div#user-card h1.username a').text().trim());
@@ -186,7 +187,7 @@
     {
         $('div#user-card .qt3script-button.qt3script-muting').remove();
     }
-    
+
     function addMuteButtonToUserCard()
     {
         var jQMuteBtn = $('<li class="qt3script-button qt3script-muting"><a class="btn btn-warning"><i class="fa fa-ban"></i>Mute User</a></li>').click(muteBtnClick);
@@ -293,14 +294,14 @@
             }
         }
     }
-    
-    function usercardMutationHandler(mutationRecords) 
+
+    function usercardMutationHandler(mutationRecords)
     {
         $(document).trigger("qt3script:userCardChanged");
         logToConsole("qt3script:userCardChanged");
     }
-    
-    function postsMutationHandler(mutationRecords) 
+
+    function postsMutationHandler(mutationRecords)
     {
         if (!ignorePostsChanged)
         {
@@ -311,13 +312,13 @@
             logToConsole("[ignored] qt3script:postsChanged");
         }
     }
-    
-    function mainOutletMutationHandler(mutationRecords) 
+
+    function mainOutletMutationHandler(mutationRecords)
     {
         $(document).trigger("qt3script:mainOutletChanged");
         logToConsole("qt3script:mainOutletChanged");
     }
-    
+
     function setupMutationObservers()
     {
         if (usercardObserver) {
@@ -329,7 +330,7 @@
             usercardObserver = new MutationObserver(usercardMutationHandler);
             usercardObserver.observe($('div#user-card')[0], { childList: true});
         }
-        
+
         if (postsObserver) {
             postsObserver.disconnect();
             postsObserver = null;
@@ -340,9 +341,9 @@
             postsObserver.observe($('div.posts-wrapper')[0], { childList: true, subtree: true});
         }
     }
-    
 
-    
+
+
     function isPreferencesPage()
     {
         logToConsole("checking for prefs page");
@@ -350,10 +351,10 @@
         {
             return true;
         }
-        
+
         return false;
     }
-    
+
     function checkForNewPage()
     {
         if (window.location.href !== lastWindowHref)
@@ -363,14 +364,14 @@
                 // posts changes url a lot, but it's not a new page (except sometimes?)
                 lastWindowHref = window.location.href;
             }
-            else 
+            else
             {
                 $(document).trigger("qt3script:newPageLoaded");
                 logToConsole("qt3script:newPageLoaded");
                 lastWindowHref = window.location.href;
             }
         }
-        
+
         // need to do this better, obviously
         if (!postsObserver && $('div.posts-wrapper').length>0)
         {
@@ -378,38 +379,35 @@
             postsObserver.observe($('div.posts-wrapper')[0], { childList: true, subtree: true});
         }
     }
-    
+
     function newPageLoaded()
     {
         username = $("#current-user img").attr("title");
         userJsonURL = "/users/"+username+".json";
-        
+
         if (isPreferencesPage())
         {
             logToConsole("prefs page land");
             addScriptOptionsNavToPrefsPage();
         }
-        
+
         setupMutationObservers();
         hideMutedUserPosts();
     }
-    
+
     function replaceDateTimeStamp()
     {
         //$(".post-info span.relative-date").not(".qt3script-datefix").each(function() {$(this).addClass("qt3script-datefix").text($(this).attr("title"));});
         $(".post-info span.relative-date").not(":has(span.qt3script-dfspan)").each(function() {$(this).addClass("qt3script-datefix").html("<span class='qt3script-dfspan'>" + $(this).attr("title") + "</span>");});
     }
-    
+
     function init() {
-	// load css for muting users
-        $('head').append('<link rel="stylesheet" href="' + scriptCssUrl + '" type="text/css" />');
-	    
         if ($("#main-outlet").length>0)
         {
             mainOutletObserver = new MutationObserver(mainOutletMutationHandler);
             mainOutletObserver.observe($("#main-outlet")[0], { childList: true});
         }
-        
+
         logToConsole("init");
         username = $("#current-user img").attr("title");
         userJsonURL = "/users/"+username+".json";
@@ -427,25 +425,29 @@
 
         //$(document).on("qt3script:mainOutletChanged",checkForNewPage);
         //$(document).on("qt3script:mainOutletChanged",function() {$(document).trigger("qt3script:newPageLoaded");});
-        
+
         // ugh, sorry
         window.setInterval(checkForNewPage,500);
-        
+
         //newPageLoaded();
-        
+
         $.getJSON(userJsonURL, gotUserJson);
 
         // ugh, double sorry
         //window.setTimeout(setupResizeObserver,200);
     }
-  
+
     function waitForJQuery() {
         if ($) {
+
             clearInterval(waitForJQueryInterval);
 
-            $(function(){init();});
+          	// load css for muting users
+          	$('head').append('<link rel="stylesheet" href="' + scriptCssUrl + '" type="text/css" />');
+
+          	$(function(){init();});
         }
     }
 
-    var waitForJQueryInterval = setInterval(waitForJQuery,500);
+  var waitForJQueryInterval = setInterval(waitForJQuery,500);
 })();
