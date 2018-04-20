@@ -1,17 +1,19 @@
 // ==UserScript==
 // @name         QuarterToThree Discourse Forum Helper
 // @namespace    https://github.com/matthewboonstra/qt3UserScript/
-// @version      0.38.2
+// @version      0.38.3
 // @description  A User Script for the new QuarterToThree forum on Discourse.
 // @author       arrendek
 // @match        *://forum.quartertothree.com/*
-// @grant        unsafeWindow
+// @grant        none
 // @downloadURL  https://github.com/matthewboonstra/qt3UserScript/raw/master/QuarterToThreeDiscourseForumHelper.user.js
 // @require       http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js
 // ==/UserScript==
 
 (function() {
     'use strict';
+
+    var $ = jQuery.noConflict(true);
 
     //var scriptCssUrl = "https://cdn.rawgit.com/matthewboonstra/qt3UserScript/master/qt3Script.css";
     // specific commit version for new css change
@@ -437,6 +439,7 @@
         //window.setTimeout(setupResizeObserver,200);
     }
 
+    // this isn't necessary anymore but also won't break anything so I'm leaving it in case I need it again in the future
     function waitForJQuery() {
         if ($) {
 
