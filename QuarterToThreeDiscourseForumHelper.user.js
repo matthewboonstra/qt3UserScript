@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         QuarterToThree Discourse Forum Helper
 // @namespace    https://github.com/matthewboonstra/qt3UserScript/
-// @version      0.38.3
+// @version      0.38.4
 // @description  A User Script for the new QuarterToThree forum on Discourse.
 // @author       arrendek
 // @match        *://forum.quartertothree.com/*
@@ -136,9 +136,15 @@
         if ((force===true) || (newUserOptions != userOptions))
         {
             logToConsole("saving new user options: " + newUserOptions);
+            var csrfToken = null;
+            if (Discourse && Discourse.Session && Discourse.Session.current())
+            {
+                csrfToken = Discourse.Session.current().csrfToken;
+            }
             var userOptionsDataObj = {user_fields: {}};
             userOptionsDataObj.user_fields[customCssFieldNum] = newUserOptions;
             $.ajax({
+                headers: { 'X-CSRF-Token': csrfToken },
                 data: userOptionsDataObj,
                 url: userJsonURL,
                 method: "put"
@@ -163,7 +169,13 @@
     function saveMutedUsernames(successFn)
     {
         var mutedUserNamesDataObj = {muted_usernames: mutedUsernames.join()};
+        var csrfToken = null;
+        if (Discourse && Discourse.Session && Discourse.Session.current())
+        {
+            csrfToken = Discourse.Session.current().csrfToken;
+        }
         $.ajax({
+            headers: { 'X-CSRF-Token': csrfToken },
             data: mutedUserNamesDataObj,
             url: userJsonURL,
             method: "put",
