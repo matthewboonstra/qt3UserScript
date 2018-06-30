@@ -2,21 +2,18 @@
     background-color: #fdf6e3;
 }
 
-.entry-title
-{
+.entry-title {
     color: #073642 !important;
     font-family: "Palatino", "Book Antigua", "Georgia";
 }
 
-p
-{
+p {
     color: #073642 !important;
     font-size: 16px;
     line-height: 24px; 
     font-family: "Lucida Grande", "Lucida Sans Unicode", sans-serif;
 }
 
-a, #site-title a
-{
+a, #site-title a {
     color: #b58900;
 }
