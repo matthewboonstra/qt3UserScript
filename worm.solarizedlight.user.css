@@ -1,3 +1,12 @@
+/* ==UserStyle==
+@name        Example
+@namespace   github.com/matthewboonstra
+@version     0.5.0
+@description Solarized Light user CSS style for https://parahumans.wordpress.com (blog entries only)
+@author      Matthew Boonstra
+==/UserStyle== */
+
+@-moz-document url-prefix("https://parahumans.wordpress.com/20") {
 #page, .single-post {
     background-color: #fdf6e3;
 }
@@ -16,4 +25,5 @@ p {
 
 a, #site-title a {
     color: #b58900;
+}
 }
