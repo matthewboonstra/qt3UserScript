@@ -1,21 +1,24 @@
 /* ==UserStyle==
 @name        Worms - Solarized Light
 @namespace   github.com/matthewboonstra
-@version     0.5.0
+@version     0.6.0
 @description Solarized Light user CSS style for https://parahumans.wordpress.com (blog entries only)
 @author      Matthew Boonstra
 ==/UserStyle== */
 
-@-moz-document url-prefix("https://parahumans.wordpress.com/20") {
+@-moz-document url-prefix("https://parahumans.wordpress.com/") {
+    body,
     #page,
     .single-post,
     .comment,
     .commentlist > li.comment,
     .commentlist .children li.comment,
     #site-generator {
-        background-color: #fdf6e3;
+        background: #fdf6e3;
     }
     .entry-title,
+    .page-title,
+    .widget-title,
     #respond h3 {
         color: #073642 !important;
         font-family: "Palatino", "Book Antigua", "Georgia";
@@ -27,7 +30,8 @@
         font-family: "Lucida Grande", "Lucida Sans Unicode", sans-serif;
     }
     a,
-    #site-title a {
+    #site-title a,
+    .entry-title a {
         color: #b58900;
     }
     #comments p {
